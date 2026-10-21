@@ -1,0 +1,7 @@
+schema: spec-driven
+context: |
+  Atrapa is a game by Tlatoāni, an homage to the original Atrapa by Bulloncito.
+  Stack: Flutter and Flame for web, Android, iOS, Linux, macOS, and Windows.
+  Web hosting: Cloudflare Workers static assets using Wrangler.
+  Production domain: atrapa.tlatoani.net.
+  First release is an Under Construction landing page. Gameplay is not yet defined.

@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "atrapa",
+  "compatibility_date": "2026-10-21",
+  "assets": {
+    "directory": "./build/web",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [{ "pattern": "atrapa.tlatoani.net", "custom_domain": true }]
+}

@@ -1,0 +1,22 @@
+# Local forge context
+.forge-startup-context.md
+# Node / Cloudflare
+node_modules/
+.wrangler/
+.dev.vars
+.env
+# Dart / Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+# Editors
+.idea/
+.vscode/
+*.iml
+# Operating systems
+.DS_Store
