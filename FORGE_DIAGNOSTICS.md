@@ -70,6 +70,27 @@ Maintainer request: preserve nonblocking preparation/status, add byte/progress o
 
 An initial 320-pixel widget test caught a header overflow. A wrapping header fixed it, and both viewport tests passed. This is useful validation evidence, not a forge defect. Distinguish app errors from infrastructure incidents.
 
+### D-006: Direct accelerator training lane on macuahuitl — observed 2026-10-21
+
+**Scope:** infrastructure proof only. Per the design review (`review-2026-10-21.md` R1/R4/R6) the rules core, first trainer and browser evaluator are expected to be pure Dart; the GPU path is **optional** and this Rust crate is not the project trainer. Environment is a PROVISIONAL toy grid (8x8, imitate a "reduce Manhattan distance" teacher); it does not use Atrapa rules (1.2/1.3 open) or a shared headless transition (2.1 not built), so it does not close task 6.1.
+
+**Observed** on bare-metal host macuahuitl (not the coding forge), rootless Podman with NVIDIA CDI (`nvidia.com/gpu=all`):
+
+| Item | Value |
+|---|---|
+| GPU | NVIDIA RTX A5000, 24564 MiB, driver 615.71.09 |
+| Image | `docker.io/nvidia/cuda:12.6.3-devel-ubuntu24.04@sha256:badf6c452e8b1efea49d0bb956bef78adcf60e7f87ac77333208205f00ac9ade` |
+| Trainer | `trainer/` (Rust, candle 0.9.2, AdamW), MLP 128-64-4, 8516 params, 34064 B f32 |
+| Job | 2000 steps x 4096 samples, seed 42; run with `trainer/run.sh cpu` / `trainer/run.sh cuda` |
+| CPU (host, `nice -n 10`) | device_used=cpu, 14.26 s training wall, ~574k samples/s, loss 1.41 -> 0.0011, held-out acc 0.23 -> 1.00 |
+| CUDA (container) | device_used=cuda:0, 2.20 s training wall, ~3.73M samples/s (~6.5x CPU), loss 1.39 -> 0.0009, acc 0.28 -> 1.00; cold container build 33 s |
+| Export | `weights.f32` (flat LE f32: l1.weight[64,128] row-major, l1.bias, l2.weight[4,64], l2.bias) + `manifest.json` (shapes, dtype, sha256, provenance, 4 reference-logit fixtures) |
+| Parity | plain-Rust `reference_forward` vs candle over 2048 held-out observations: max abs diff 7.6e-6 (tol 1e-4), 100% action agreement, on both devices |
+
+Wall times are a tiny-model regime with the host land queue possibly active; they are not a capacity benchmark. CPU and CUDA runs share seed but initialise weights with device-specific RNG, so their weight hashes differ (not bit-reproducible across devices).
+
+**Still missing:** training on the shared authoritative transition (Dart, after 1.2/1.3 and 2.1); a Dart evaluator parity test against `manifest.json` fixtures (5.3); GPU access from the coding forge itself (this ran on the host); durable/detached jobs, artifact retention and a fleet job API; per-device bit-reproducibility; the CUDA run reuses the host rustup toolchain read-only rather than a toolchain pinned in the image.
+
 ## Required figuring out
 
 - `flutter` is a host-managed wrapper; filesystem, device, and artifact mounts available to its sibling execution environment may differ from this shell. Confirm access to any new training/artifact mount in every consumer.
@@ -86,7 +107,7 @@ These are gaps relative to Atrapa training/live viewing, not claims that all are
 
 | Gap | Current evidence | Requested resolution / acceptance test |
 |---|---|---|
-| Direct accelerator training | Device nodes/tools absent here; sibling Ollama only | Opt-in training service/container with selected backend; run a real gradient update and report device used |
+| Direct accelerator training | Forge: device nodes absent. Host macuahuitl: CUDA gradient training observed 2026-10-21 (D-006); optional per review | Opt-in training service/container with selected backend; run a real gradient update and report device used |
 | NPU engine | Startup envelope says `engine-missing` | State supported model/backend capabilities; NPU is optional and not a blocker for CPU/CUDA work |
 | Dedicated artifacts mount | Existing cache has unverified retention/cleanup and shared disk nearly full | Document protected artifacts namespace or add explicit host working-directory bind mount; verify persistence across forge recreation |
 | Durable jobs | Tool session handles are available, but job survival across forge teardown is untested | Host-managed detached jobs with logs, status, checkpoint/resume and cancellation; test forge shutdown/reconnect |
@@ -166,3 +187,4 @@ The planning change `openspec/changes/grid-game-and-local-ai/` now includes a dr
 - **2026-10-21 — Bootstrap:** OpenSpec, Flutter/Flame and all platform runners initialized; responsive construction page built; tests/analyze/web release passed; managed Wrangler preview and visible browsers worked. D-001 YAML metadata and D-002 glyph issues resolved with documented workarounds; D-003 cold toolchain preparation completed.
 - **2026-10-21 — Planning:** Grid gameplay, bounded inference, local policy and offline training specs/plans committed. No trained model or gameplay implementation yet.
 - **2026-10-21 — Infra/UX diagnostics:** Verified CPU/cgroup/tmpfs/cache mounts and Ollama endpoint; discovered cache is disk-backed and backing disk has about 34 GiB free. Documented dedicated bind mount, training-lane wishlist, and live match viewing UX. No host/container configuration changed and no remote messages/jobs submitted.
+- **2026-10-21 — GPU lane smoke (macuahuitl):** Rust/candle toy-grid MLP trained on CUDA (RTX A5000, pinned image digest) and CPU; flat f32 + manifest export with reference-forward parity. Infrastructure proof only; GPU optional per review. See D-006.
