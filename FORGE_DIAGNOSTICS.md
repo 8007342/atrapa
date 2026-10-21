@@ -6,7 +6,7 @@ Last observed: 2026-10-21 UTC. Project: Atrapa. This is living feedback for Till
 
 Update this file when a session discovers or resolves a forge issue, changes a workaround, verifies accelerator access, or measures training/runtime limits. Preserve resolved incidents and date new evidence. Separate **observed**, **reported**, **proposed**, and **untested** claims. Never record tokens, credential contents, private keys, authenticated URLs, or complete environment dumps. A capability existing on the host is not proof the forge or a sibling toolchain can use it.
 
-This session only drafted UX/training plans and inspected infrastructure. It did not mount a new volume, start training, access the A5000 host, or deploy to production. The current running app remains the construction landing page.
+Sessions so far drafted UX/training plans, inspected infrastructure, and exercised the existing cache with a synthetic CPU neural-training/checkpoint probe. No new volume was mounted, no gameplay policy was trained, no A5000 host was accessed, and no production deployment occurred. The current running app remains the construction landing page.
 
 ## Current environment: observed
 
@@ -17,7 +17,7 @@ This session only drafted UX/training plans and inspected infrastructure. It did
 | Memory | `memory.max` = 6442450944 bytes (6 GiB); host-visible RAM about 14 GiB | Size batches and workers to container limits, not `free` alone |
 | Memory events | `oom` and `oom_kill` counters zero at inspection | No observed cgroup OOM in this run; not a training capacity benchmark |
 | Checkout | `/home/forge/src` is 1.5 GiB tmpfs; about 1.2 GiB free | Source/build storage is limited and ephemeral; commit/push source changes |
-| Project cache | `/home/forge/.cache/tillandsias-project` is writable, disk-backed btrfs | Existing storage candidate for small artifacts; lifecycle/cleanup policy needs confirmation |
+| Project cache | `/home/forge/.cache/tillandsias-project` is writable, disk-backed btrfs | Byte-verified I/O and cross-toolchain sharing now tested; teardown retention/cleanup policy still needs confirmation |
 | Cache backing | Podman named volume `tillandsias-forge-cache-atrapa`; backing filesystem about 475 GiB total, 34 GiB free, 93% used | Space is shared with host, not reserved for this project; do not assume a 20 GiB allocation is harmless |
 | Temporary storage | `/tmp` 256 MiB tmpfs; `/dev/shm` approximately 63 MiB | Large compiler scratch, datasets, and worker shared memory need explicit paths/budgets |
 | Tools | Node 22.23.1, Cargo 1.99.0, OpenSpec 1.14.3 | Development and Rust trainer exploration available |
@@ -88,47 +88,56 @@ These are gaps relative to Atrapa training/live viewing, not claims that all are
 |---|---|---|
 | Direct accelerator training | Device nodes/tools absent here; sibling Ollama only | Opt-in training service/container with selected backend; run a real gradient update and report device used |
 | NPU engine | Startup envelope says `engine-missing` | State supported model/backend capabilities; NPU is optional and not a blocker for CPU/CUDA work |
-| Dedicated artifacts mount | Existing cache has unverified retention/cleanup and shared disk nearly full | Document protected artifacts namespace or add explicit host working-directory bind mount; verify persistence across forge recreation |
+| Dedicated artifacts mount | Existing cache passed real writes, independent-process reads and sibling Flutter access; teardown retention remains unverified | Existing cache is sufficient to start small jobs; document retention/protected namespace and test later-session persistence |
 | Durable jobs | Tool session handles are available, but job survival across forge teardown is untested | Host-managed detached jobs with logs, status, checkpoint/resume and cancellation; test forge shutdown/reconnect |
 | Fleet job API | No remote A5000 access, allocation or training service tested | Authenticated resource-scoped job submission, pinned environments, resumable artifacts, and status/log tools |
 | Remote live episode feed | No simulator/training stream implemented | Serve selected versioned episode snapshots/events through a project-authorized route; browser never needs a public training API |
 | Physical mobile profiling | Only emulated mobile browser inspected | Document phone-access preview flow and collect actual Android/iOS performance; emulation alone cannot qualify a model |
 | Storage budget discoverability | Capacity exposed as raw mounts/cgroups, not a single product view | Report effective memory, tmpfs, artifact retention, disk quota and available bytes in startup context |
-| Trainer/export compatibility | No training framework or export pipeline smoke test | Reuse authoritative simulator, train a tiny model, export weights, and compare browser/native outputs |
+| Trainer/export compatibility | Synthetic plain-Dart CPU gradient/checkpoint/resume probe passed; full framework/game integration untested | Reuse authoritative simulator, qualify a trainer/backend, and compare browser/native policy outputs |
 
-## Mounting a host working directory
+## Running-container mounts and using the existing cache
 
-Run Podman commands on the **host**, not in this forge. This documents the launch change; it was not executed. The Tillandsias launcher must preserve its existing networking, identities, sockets, secrets and mounts when recreating a forge. There is no verified launcher UI/config key for extra mounts available to this agent; do not invent one or replace the managed launch with a bare `podman run`.
+**Operator correction:** the Tillandsias forge launcher has no extra-mount override parameters. Earlier guidance to ask the launcher to append a volume option was not an actionable path in this stack. Preserve this correction in future advice.
 
-1. Inspect the host's existing container and mounts:
+Podman does not expose an ordinary supported hot-add bind-volume option through `podman update`; that command changes resource/healthcheck configuration. `podman mount` exposes a container's root filesystem on the host; it does not insert a host directory into a running container. Host administrators can sometimes inject a transient mount through Linux namespace tools, but permissions, rootless mappings, SELinux and restart persistence make this host-specific. It is not needed for the successful cache experiment, and no namespace/mount changes were attempted.
 
-   ```sh
-   podman ps --format '{{.Names}}\t{{.Image}}'
-   podman inspect <forge-container-name> --format '{{json .Mounts}}'
-   podman volume inspect tillandsias-forge-cache-atrapa
-   ```
+Use the volume already mounted at:
 
-2. Create a dedicated host directory:
+`/home/forge/.cache/tillandsias-project/atrapa-training`
 
-   ```sh
-   mkdir -p "$HOME/atrapa-work"
-   ```
+A dedicated probe subdirectory was actually created, populated, read and used for CPU checkpointing. The host-managed Flutter toolchain can read and write the same path. No forge restart or new mount was required. This is enough to start small data-generation and CPU-learning experiments while storage remains bounded. The mounted volume is `tillandsias-forge-cache-atrapa`; maintainers should document its cleanup policy rather than treat an unverified policy as a reason to block all work.
 
-3. Ask the launcher to include this additional volume option in its existing `podman create/run` configuration:
+Host-side read-only inspection, if useful to the operator:
 
-   ```sh
-   --volume "$HOME/atrapa-work:/work/atrapa:rw,z"
-   ```
+```sh
+podman ps --format '{{.Names}}\t{{.Image}}'
+podman inspect <forge-container-name> --format '{{json .Mounts}}'
+podman volume inspect tillandsias-forge-cache-atrapa
+```
 
-   Use `:z` when the forge and training/toolchain containers share this directory on SELinux hosts. For a directory private to one container, `:Z` gives private labeling. Relabel only the dedicated directory, not the entire home directory. Preserve the launcher's existing user namespace; UID/GID 1000 inside does not establish the host mapping. `--userns=keep-id` is a possible launcher-level strategy, not an option to append blindly to an existing mapping. Avoid `:U` unless recursive host ownership changes are explicitly intended.
+Keep data/checkpoints outside the tmpfs checkout and public web assets. Use an explicit run directory, bound dataset growth, and retain the hashes/manifests in Git. Cache is not backup; a future session must verify retained artifacts before overwriting them. Avoid using the cache root as scratch or cleaning other tools' caches. No claim of retention across teardown or power-loss durability follows from same-session file flush/rename tests.
 
-4. Recreate the forge through its launcher with existing source work pushed first. New bind mounts normally belong to container creation; `podman exec` does not add a persistent mount to the existing launch specification. Restarting the same unchanged container will not add it either. Test the directory is writable from the forge and every training/toolchain consumer, then verify a sentinel/checkpoint survives recreation.
+References:
 
-5. Configure future training jobs with an explicit artifact path such as `ATRAPA_TRAINING_DIR=/work/atrapa`. Keep datasets, checkpoints, run logs and exported large artifacts there, outside the source tree and public static-assets directory. Commit only small selected model bundles when appropriate; store large artifacts by hash in durable storage.
+- https://docs.podman.io/en/latest/markdown/podman-update.1.html
+- https://docs.podman.io/en/latest/markdown/podman-mount.1.html
 
-A possible short-term path is `/home/forge/.cache/tillandsias-project/atrapa-training`, if maintainers confirm that namespace survives cleanup and is suitable for user data. It is not created here, and cache != backup. Existing free disk does not imply an allocated training quota.
+## Executed cache and CPU-learning experiment
 
-Podman reference: https://docs.podman.io/en/latest/markdown/podman-run.1.html
+Run: `session-20261021-a`, 2026-10-21 UTC. Source and exact reproduction commands: [tool/README.md](tool/README.md). Committed measured output and artifact SHA-256 hashes: [plan/experiments/forge-cache-2026-10-21.json](plan/experiments/forge-cache-2026-10-21.json).
+
+| Experiment | Observed result | What it establishes |
+|---|---|---|
+| Patterned 8 MiB payload | Write + flush + rename about 43.3 ms; separate-process read/byte verification about 34.2 ms | Writable disk-backed artifacts, independent process access and deterministic content; timings include warm-cache effects and are not throughput guarantees |
+| Tiny 2–8–1 XOR network, 33 parameters | CPU gradient descent, 6,000 epochs; mean cross-entropy 0.731669 -> 0.0004485 | Real weight updates and a serializable checkpoint can run now without GPU, Ollama or extra framework dependencies |
+| Independent-process resume | Resume to 12,000 epochs; loss 0.0002141; every weight exactly matched uninterrupted reference | Checkpoint load/resume works for the deterministic plain-Dart fixture |
+| Sibling Flutter access | Opt-in Flutter test verified payload and checkpoint, then wrote a receipt that the forge read | The existing mount is shared with this host-managed toolchain in this lane |
+| Data footprint | About 8.1 MiB including payload/checkpoints/reports | A bounded probe can run without allocating multi-gigabyte datasets |
+
+This is **synthetic infrastructure qualification**, not a trained snake policy, RL throughput benchmark, trainer-framework qualification, export-to-WASM test or detached-job survival proof. The toy probe uses manual gradient descent in Dart to avoid framework-install cost and isolate basic capabilities. Dedicated training framework selection remains open. Per-process RSS in the saved probe results is roughly 170–175 MB; it is not a future training memory requirement.
+
+Immediate usable next steps: implement shared headless transition fixtures, generate bounded seeded episodes into the cache, bring up local baseline exhibitions with the shared renderer, and then qualify the chosen trainer against that exact simulation. Existing input/gameplay review gates still apply to behavior dependent on unconfirmed rules. None of this requires waiting for the A5000 host; its feedback can shape larger jobs and backend selection in parallel.
 
 ## Proposed A5000 Tillandsias training lane
 
@@ -166,3 +175,5 @@ The planning change `openspec/changes/grid-game-and-local-ai/` now includes a dr
 - **2026-10-21 — Bootstrap:** OpenSpec, Flutter/Flame and all platform runners initialized; responsive construction page built; tests/analyze/web release passed; managed Wrangler preview and visible browsers worked. D-001 YAML metadata and D-002 glyph issues resolved with documented workarounds; D-003 cold toolchain preparation completed.
 - **2026-10-21 — Planning:** Grid gameplay, bounded inference, local policy and offline training specs/plans committed. No trained model or gameplay implementation yet.
 - **2026-10-21 — Infra/UX diagnostics:** Verified CPU/cgroup/tmpfs/cache mounts and Ollama endpoint; discovered cache is disk-backed and backing disk has about 34 GiB free. Documented dedicated bind mount, training-lane wishlist, and live match viewing UX. No host/container configuration changed and no remote messages/jobs submitted.
+
+- **2026-10-21 — Cache boundary exercise:** Created an 8.1 MiB cache probe; verified 8 MiB payload across processes; trained/resumed synthetic XOR weights with exact checkpoint parity; host-managed Flutter read/wrote same cache successfully. Added reproducible probes and evidence report. Operator confirmed launcher has no mount override; extra mount is not needed for these experiments. Teardown retention remains to be checked in a later session.
