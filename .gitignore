@@ -20,3 +20,6 @@ coverage/
 *.iml
 # Operating systems
 .DS_Store
+
+# Rust / scratch
+target/
