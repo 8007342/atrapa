@@ -45,6 +45,7 @@ When ready to publish, authenticate Wrangler to the Cloudflare account managing 
 - `lib/game/atrapa_game.dart`: decorative [Flame](https://docs.flame-engine.org/latest/index.html) canvas, ready for future game components.
 - `openspec/specs/`: behavior requirements; update these before implementing future features.
 - `plan/roadmap.md`: outstanding work across sessions.
+- `FORGE_DIAGNOSTICS.md`: observed forge behavior, Podman storage guidance, and the training-host wishlist.
 - Platform directories: Flutter runners for each supported target.
 
 The root `LICENSE` governs this project.

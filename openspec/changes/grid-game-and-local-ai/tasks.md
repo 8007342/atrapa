@@ -26,6 +26,9 @@ These tasks describe future implementation, not work completed by writing this p
 - [ ] 3.5 Add the development gameplay surface and square-grid projection without replacing the construction entry; verify existing landing tests, logical-state preservation on resize, and keyboard/touch play at 320-pixel portrait and desktop widths.
 - [ ] 3.6 Configure a slow small-arena first-level profile and faster development level profiles; document their measured units and demonstrate that level speed changes independently of HARD/HARDER/HARDERER selection.
 
+- [ ] 3.7 Build the proposed setup/play/watch functional layouts using shared arena/HUD components, safe areas, snake identity and resource/status cues; verify narrow portrait and desktop layouts, accessible identities and that watch controls never steer an observed snake.
+- [ ] 3.8 Implement visible loading/baseline, active, paused/disconnected and collision-outcome states plus local exhibition/replay entry; verify source labels, outcome reasons and local pause behavior against seeded fixtures, and document the draft UX flow.
+
 ## 4. Baseline opponents and bounded scheduling
 
 - [ ] 4.1 Build a deterministic scripted baseline opponent obeying the shared command rules; verify replay repeatability and representative obstacle/resource fixtures, and document its use during inference unavailability.
@@ -56,6 +59,9 @@ These tasks describe future implementation, not work completed by writing this p
 - [ ] 6.6 Compare student sizes, optional larger teachers/distillation and precision variants; verify each exported candidate passes numerical/action parity and carries training configuration, seeds, artifact hashes and provenance.
 - [ ] 6.7 Document training and export commands, datasets, compute usage and limitations; verify a clean environment can reproduce the smoke experiment and evaluate an existing checkpoint.
 
+- [ ] 6.8 Add an optional selected-episode observer channel separate from training transitions and reliable outcomes; verify a slow/disconnected browser cannot block training or drop learning data, and document snapshot replacement and reconnect behavior.
+- [ ] 6.9 Connect the watch surface to a project-authorized local or remote episode adapter with version/tick/lag validation; verify live/exhibition/replay labels, schema mismatch handling, current-snapshot reconnect and remote pause isolation, recording any forge routing limitations.
+
 ## 7. Acceptance tournament and integration
 
 - [ ] 7.1 Freeze held-out maps, seeds, opponents, schedule combinations, sample counts and quality thresholds before final selection; verify training/tuning manifests exclude the held-out acceptance set.
@@ -63,6 +69,8 @@ These tasks describe future implementation, not work completed by writing this p
 - [ ] 7.3 Validate HARD/HARDER/HARDERER ordering and viable decision margins through maximum configured boost with sustained multi-opponent load; document failures and retune or reject profiles that miss acceptance bounds.
 - [ ] 7.4 Run real Android and iOS browser sessions plus desktop integration checks with keyboard and portrait touch controls; verify local inference, responsiveness and declared complete-bundle/runtime limits, recording unsupported profiles honestly.
 - [ ] 7.5 Run Flutter analysis/tests, release web build, OpenSpec strict validation and the documented Wrangler smoke flow; verify the construction entry, development game, bundle rollback and baseline recovery together.
+
+- [ ] 7.6 Run play/watch overlap scenarios using the same episode in headless replay, local exhibition and a delayed live feed; verify consistent outcomes, bounded visual buffering and independent training throughput, recording UX and infrastructure roadblocks in FORGE_DIAGNOSTICS.md.
 
 ## Workflow follow-up
 

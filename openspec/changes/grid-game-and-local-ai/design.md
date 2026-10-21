@@ -78,12 +78,43 @@ Build a transparent teacher and baseline, collect demonstrations, correct learne
 
 Large teachers/search, wider experiments and distillation are allowed; deploy the smallest qualified student. The operator reports a 20-core Intel i9, 64 GB RAM, 24 GB RTX A5000 training host. Verify available GPU/driver/memory, access and job budget before scheduling work there. Keep resumable checkpoints, dataset/model hashes, seeds, trainer/environment versions and evaluation results so jobs can move between hosts without silently changing rules. Do not install or launch remote jobs during this planning phase.
 
+### 8. Draft playable UX and shared episode viewer
+
+This is a functional UX draft, not settled art direction. Start with the existing typography/colors and simple vector/grid pieces; avoid new image assets or an extra renderer. Keep the construction landing entry while development navigation offers Play and Watch.
+
+Proposed flow:
+
+`Construction entry -> Development setup -> Play / Watch -> Active surface -> Outcome / Replay or return`
+
+Development setup selects a configured level profile and the visible difficulty label. Play initially has one human and baseline opponents; learned model readiness/fallback is explicit. Watch selects a live sampled episode when available, a recorded replay, or a local exhibition from saved weights. These are different sources with visible labels, not interchangeable claims of live training.
+
+Portrait wireframe (functional arrangement only):
+
+`Mode + level + difficulty + pause/status`
+
+`Square-cell arena with distinguishable snakes and powerups`
+
+`Speed | boost reserve | brake reserve | temporary effect timers`
+
+`PLAY: bottom directional touchpad / WATCH: source identity + viewer controls`
+
+Desktop uses the same board and HUD, placing optional inspection beside the arena when space allows. Cell count does not change with aspect ratio. Respect safe areas; long labels/status text wrap, and HUD/touch targets must be checked at narrow widths before polished art. Show snake identity through more than color. A compact play HUD presents gameplay information; run IDs, inference timing and training metrics belong in optional watch/developer details so they do not clutter the eventual player flow.
+
+Two ways to see matches early:
+
+1. **Local exhibition/replay:** the browser uses the shared transition, accepted commands/seed or selected frozen policy, and the same Flame arena renderer at a visible pace. Flame owns this local clock. Rendering pace does not retune policy cadence or resource accounting. A prerecorded episode is labeled replay. Pausing a local exhibition pauses only that local simulation.
+2. **Sampled training episode:** a headless worker publishes versioned immutable snapshots plus reliable episode outcomes. An observer adapter receives a selected stream through a project-authorized service (transport selected during implementation). The source owns simulation ticks; Flame only renders/interpolates received state. Never apply both local physics and authoritative remote snapshots to the same watched episode. A training worker may run faster than real time; display source speed and lag, or use a dedicated paced evaluation episode. No guarantee that an arbitrary fast episode is watchable one-to-one at human pace.
+
+The viewer does not gate rollout/learner progress. Its latest-state mailbox is separate from the complete ordered transitions used by training and any durable replay. Bounded visual buffering can drop intermediate snapshots, never collision outcomes or learning records. Pause/detach affects only viewing; reconnect loads a full consistent snapshot and outcome/history status. Reject mismatched rules/schema IDs rather than approximating a different simulation. Remote feeds need authenticated project routing; the forge browser currently permits project-local URLs, so do not assume it can directly reach a fleet host. Offline local exhibitions remain usable without a training connection.
+
+Shared opportunities: one arena renderer, resource HUD, identity/status components, schema validation and replay fixtures across play, watch and training. Early roadblocks to test: turn/collision interpolation at dropped snapshots; portrait HUD/touch geometry; input isolation; worker throughput vs rendering pace; model/rules mismatch; protected preview transport; and persistent replay storage. See FORGE_DIAGNOSTICS.md for host mount/training lane needs and observed restrictions.
+
 ## Risks / Trade-offs
 
 - Small observations miss board topology -> compare spatial features against scripted trap fixtures and held-out boards.
 - Lower cadence becomes unavoidable failure at higher speed -> establish viable opportunity/deadline ranges at maximum boost before tier tuning.
 - Ignoring late work still wastes compute -> bound admission and profile in-flight cancellation cost.
-- Two simulation implementations drift -> share transitions or require differential replay.
+- Two simulation implementations drift -> reuse the authoritative transition; a second implementation requires a reviewed contract change.
 - Large runtime defeats tiny weights -> measure the complete download/memory budget and compare Dart/WASM.
 - Survival reward teaches endless circling -> review episode objective and evaluate loops, wins and resource behavior before policy acceptance.
 - Platform-specific timing changes strength -> publish supported performance profiles and verify tier ordering empirically on target phones.
@@ -92,7 +123,7 @@ Large teachers/search, wider experiments and distillation are allowed; deploy th
 ## Migration Plan
 
 1. Keep the construction entry and its responsive tests. Add a separate development gameplay surface only when implementation is requested.
-2. Land shared simulation and reviewed controls before model training integration; demonstrate keyboard/touch and baseline opponents.
+2. Land shared simulation and reviewed controls before model training integration; demonstrate keyboard/touch and baseline opponents. Bring up the shared play/watch renderer with local exhibitions early to expose UX/state-contract mismatches.
 3. Add the bounded scheduler and injected-delay tests, then benchmark candidate inference backends with identical weights.
 4. Train/evaluate offline and publish a versioned candidate bundle only after replay and runtime parity pass.
 5. Run phone/browser acceptance tournament; record selected budgets, limitations, and tier profiles before enabling the learned policy outside the development surface.

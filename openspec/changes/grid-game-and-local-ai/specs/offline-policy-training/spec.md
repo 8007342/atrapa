@@ -75,3 +75,25 @@ Training plans SHALL treat the reported 20-core Intel i9, 64 GB RAM, and 24 GB R
 #### Scenario: Prepare remote training
 - **WHEN** an experiment proposes use of a remote fleet GPU
 - **THEN** the plan records verified access, actual device capacity, resource allocation, and reproducible execution details before any remote job starts
+
+### Requirement: Selected episode viewing
+The training workflow SHALL support selecting an episode for observation and running a paced local exhibition with a versioned policy. Views SHALL identify live feed, exhibition, or replay, along with episode, policy, rules version, source tick and playback lag where applicable. Viewing SHALL reuse the gameplay arena presentation without requiring a renderer in headless workers.
+
+#### Scenario: Watching training progress
+- **WHEN** a user selects an available training episode feed
+- **THEN** the viewer displays its authoritative snapshots and reliable outcomes with source identity and freshness
+
+#### Scenario: Watching without an active training feed
+- **WHEN** the user starts a local exhibition from a compatible saved policy
+- **THEN** the shared simulation runs at a visible pace and the surface identifies it as an exhibition rather than live training
+
+### Requirement: Observation does not backpressure learning
+Training observation SHALL use bounded, replaceable visual snapshots separately from learning transitions and reliable episode events. A slow or paused viewer SHALL NOT slow the trainer, drop its required learning data, or mutate the observed match. Reconnection SHALL restore a consistent snapshot and retained outcome or explicitly report unavailable history.
+
+#### Scenario: Viewer falls behind
+- **WHEN** a browser cannot render every emitted training snapshot
+- **THEN** obsolete visual snapshots are replaced while simulation, learning records and terminal outcome processing continue independently
+
+#### Scenario: Viewer pauses and reconnects
+- **WHEN** the user pauses or disconnects from a remotely running training episode
+- **THEN** training continues and reconnecting shows current consistent state or a visible unavailable status rather than replaying a stale command backlog

@@ -97,3 +97,25 @@ Movement, resource consumption, and temporary effect duration SHALL depend on si
 #### Scenario: Resizing an active match
 - **WHEN** the viewport changes between portrait and landscape
 - **THEN** presentation adapts while the logical match state and movement rules remain unchanged
+
+### Requirement: Responsive play and watch presentation
+The game surface SHALL display the arena, snake identities, movement speed, acceleration and braking reserves, temporary effects, level, and visible opponent difficulty. Portrait play SHALL reserve the directional touchpad below the arena without obscuring cells. Watch mode SHALL distinguish itself from play and SHALL NOT route viewer input to an observed snake.
+
+#### Scenario: Playing in portrait
+- **WHEN** a human opens a portrait gameplay surface
+- **THEN** the arena and resource indicators remain visible above the directional touchpad within safe screen bounds
+
+#### Scenario: Entering watch mode
+- **WHEN** the user watches a selected episode
+- **THEN** the surface identifies the viewing mode and offers viewing controls instead of a snake-control touchpad
+
+### Requirement: Visible match and model states
+The development surface SHALL distinguish setup, model loading or baseline fallback, active play or viewing, paused or disconnected viewing, and terminal outcome states. Outcomes SHALL identify the relevant collision reason. Model-dependent surfaces SHALL identify the active policy or baseline rather than implying an unavailable learned policy is playing.
+
+#### Scenario: Learned policy is unavailable
+- **WHEN** a development match starts using the baseline during model loading or failure
+- **THEN** the visible state identifies the baseline and the match remains usable
+
+#### Scenario: A snake loses
+- **WHEN** the authoritative simulation reports a wall or other-snake collision loss
+- **THEN** the outcome remains visible and identifies the collision reason without inventing a campaign victory rule

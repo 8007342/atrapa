@@ -11,6 +11,7 @@ Atrapa currently has a construction screen but no playable simulation or opponen
 - Separate level movement-speed progression from AI difficulty; display EASY/MEDIUM/HARD as HARD/HARDER/HARDERER.
 - Schedule local opponent decisions through bounded actor-style messaging with broadcast snapshots and latest-pending replacement; reuse Flame updates and timers.
 - Establish offline simulation, baseline opponents, training, small-model packaging, browser runtime comparisons, and an evaluation tournament. Runtime choice and numeric tuning remain evidence-driven.
+- Draft the playable UX and a shared live-match viewer: watch paced local exhibitions or sampled training episodes using the same arena/HUD, with explicit live/replay identity and bounded observation delivery.
 - Keep the construction landing screen as the public entry while a development gameplay route supports validation; update its existing Flame foundation requirement to allow this extension.
 - Record unresolved gameplay semantics as explicit gates rather than inventing self-collision, growth, scoring, or a level-completion rule.
 
@@ -18,10 +19,10 @@ Atrapa currently has a construction screen but no playable simulation or opponen
 
 ### New Capabilities
 
-- `grid-gameplay`: Grid traversal, shared controls, resource effects, collision outcomes, and initial small-arena progression configuration.
+- `grid-gameplay`: Grid traversal, shared controls, resource effects, collision outcomes, initial progression configuration, and responsive play/watch presentation.
 - `opponent-scheduling`: Fair asynchronous opponent decision opportunities, bounded work, and stale-result rejection within Flame's lifecycle.
 - `local-policy-inference`: Versioned observation/action contracts, local model loading, backend selection, and device measurements.
-- `offline-policy-training`: Reusable headless simulation, demonstrations, self-play, reproducible model bundles, and acceptance evaluation.
+- `offline-policy-training`: Reusable headless simulation, demonstrations, self-play, reproducible model bundles, acceptance evaluation, and selected episode viewing.
 
 ### Modified Capabilities
 
