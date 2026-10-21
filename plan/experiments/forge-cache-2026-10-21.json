@@ -1,0 +1,93 @@
+{
+  "observedUtc": "2026-10-21T23:20:46.273Z",
+  "purpose": "Infrastructure smoke test only; synthetic XOR, not a gameplay policy",
+  "cacheDirectory": "/home/forge/.cache/tillandsias-project/atrapa-training/probes/session-20261021-a",
+  "proven": [
+    "8 MiB patterned write, flush, atomic rename and independent-process byte verification",
+    "CPU gradient descent, JSON checkpoint, independent-process resume, exact uninterrupted parity",
+    "host-managed Flutter read and receipt write visible in forge"
+  ],
+  "notProven": [
+    "retention across forge/container recreation",
+    "power-loss durability",
+    "training framework compatibility",
+    "GPU/NPU training",
+    "snake gameplay strength"
+  ],
+  "results": {
+    "write-result": {
+      "schema": "atrapa-forge-probe-v1",
+      "bytes": 8388608,
+      "pattern": "byte[index] = index % 251",
+      "writeFlushRenameMs": 43.304,
+      "pid": 15509,
+      "utc": "2026-10-21T23:20:04.403390Z",
+      "mode": "write",
+      "elapsedMs": 52.173,
+      "currentRssBytes": 174809088,
+      "dart": "3.13.5"
+    },
+    "read-result": {
+      "schema": "atrapa-forge-probe-v1",
+      "verifiedBytes": 8388608,
+      "readAndVerifyMs": 34.193,
+      "readerPid": 15517,
+      "writerPid": 15509,
+      "mode": "read",
+      "elapsedMs": 35.026,
+      "currentRssBytes": 175247360,
+      "dart": "3.13.5"
+    },
+    "train-result": {
+      "initialLoss": 0.7316686507378865,
+      "finalLoss": 0.00044849984786063195,
+      "epochs": 6000,
+      "predictions": [
+        0.0003850916505839514,
+        0.9996246300101558,
+        0.9994447800843858,
+        0.00047790477508234203
+      ],
+      "mode": "train",
+      "elapsedMs": 24.172,
+      "currentRssBytes": 171270144,
+      "dart": "3.13.5"
+    },
+    "resume-result": {
+      "epochs": 12000,
+      "loss": 0.00021406796508384836,
+      "exactResumeParity": true,
+      "predictions": [
+        0.00018430373444756676,
+        0.9998209985540893,
+        0.999733953067756,
+        0.00022682561345843682
+      ],
+      "mode": "resume",
+      "elapsedMs": 49.681,
+      "currentRssBytes": 170192896,
+      "dart": "3.13.5"
+    },
+    "flutter-receipt": {
+      "schema": "atrapa-forge-probe-v1",
+      "verifiedBytes": 8388608,
+      "checkpointEpochs": 6000,
+      "checkpointLoss": 0.00044849984786063195,
+      "utc": "2026-10-21T23:20:16.206180Z"
+    }
+  },
+  "artifacts": {
+    "payload.bin": {
+      "bytes": 8388608,
+      "sha256": "bdf23837181f5808331800c1ae2b4f7d7a839536b10d58491471c50dde23833a"
+    },
+    "toy-checkpoint.json": {
+      "bytes": 788,
+      "sha256": "b3d6e6680e98523472779e192920f6fb923f8415796a8c3f5fabf5ce92c6ddcc"
+    },
+    "toy-resumed.json": {
+      "bytes": 790,
+      "sha256": "cca87817ebe10e6226c75894e4fd0bc22fa80c5c8c0ceb2432237a49e129dab2"
+    }
+  }
+}
