@@ -7,4 +7,4 @@
 
 - `plan/rulings-2026-10-21.md` overrides older planning text. Rules live in `packages/atrapa_rules`; the app and trainer import them. Never reimplement rules in `lib/`. Rules/schema changes require version and golden replay updates, then retraining on macuahuitl.
 - Actual gameplay training is compute-host work; do not train on this laptop. The Dart XOR and Rust toy-grid probes are infrastructure evidence only.
-- Use `work/<topic>` branches and PRs into `game`; do not push app changes directly to main or game. Default production builds keep `/play` disabled; development preview builds enable `ATRAPA_DEV_PLAY`.
+- Use `work/<topic>` branches for development and push verified milestones frequently. User authorization on 2026-10-22 permits direct integration pushes to `game`; fetch and merge concurrent changes first and never force-push shared branches. Do not push app changes directly to main. Use `inbox.d/` on `game` for durable coordination with Claude on Macuahuitl. Default production builds keep `/play` disabled; development preview builds enable `ATRAPA_DEV_PLAY`.
