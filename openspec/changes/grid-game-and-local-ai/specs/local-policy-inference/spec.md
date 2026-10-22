@@ -1,60 +1,46 @@
-# Local Policy Inference
+# Local policy inference
 
 ## Purpose
 
-Define a compact, versioned local policy interface whose browser runtime and model size are selected through measured gameplay and device evaluation.
+Load small versioned trained-policy bundles locally and evaluate them through a bounded synchronous Dart runtime with honest baseline fallback.
 
 ## ADDED Requirements
 
-### Requirement: Numeric observation contract
-Policies SHALL consume a versioned numeric observation describing grid geometry, relevant snake occupancy and movement, controlled-snake heading and speed, resources and temporary effects, powerups, and decision timing. The contract SHALL specify shapes, ordering, units, normalization, visibility, and simultaneous-snapshot semantics consistently across training and runtime.
+### Requirement: Shared numeric contract
+The policy SHALL consume the shared rules package's versioned observation and action definitions. The first contract SHALL use 252 numeric observations and coast, left, right action ordering. Offline and app encoding SHALL use the same code; rules/schema changes SHALL update the version and golden replay to signal retraining.
 
-#### Scenario: Training and browser encode the same state
-- **WHEN** the same fixture state is encoded offline and in the browser
-- **THEN** both encoders produce equivalent observations under the declared schema and numerical tolerance
+#### Scenario: Same observation offline and in app
+- **WHEN** the same rules state is encoded in either runtime
+- **THEN** the observation values and ordering match the shared schema
 
-### Requirement: Shared command authority
-Policy outputs SHALL map to versioned game commands for coast, perpendicular turns, acceleration, and braking through the same authoritative rules used by human input. Policies SHALL NOT bypass turn boundaries, resource limits, speed bounds, or collision rules. Relative actions SHALL retain their source heading for stale-result validation.
+### Requirement: Safe versioned bundles
+A bundle SHALL identify its model, rules and observation versions, action ordering, layer dimensions, numeric format, output interpretation and SHA256 of weights. The loader SHALL reject schema, dimension, checksum, finite-value or parameter-limit violations before using the model. FP32 weights SHALL use the documented row-major little-endian layout.
 
-#### Scenario: A model requests an exhausted resource
-- **WHEN** a policy requests acceleration or braking without sufficient resource
-- **THEN** the same authoritative resource rule that applies to a human command determines its effect
+#### Scenario: Corrupted weights
+- **WHEN** weight bytes do not match the manifest hash
+- **THEN** the loader returns a visible unavailable state and the baseline continues
 
-### Requirement: Verifiable model bundle
-A model bundle SHALL declare model version, observation and action schema versions and hashes, artifact integrity hashes, numeric formats, compatible runtime requirements, and output interpretation. Loading SHALL reject incompatible or corrupted bundles before they control opponents.
+#### Scenario: Wrong schema
+- **WHEN** an export identifies a different rules or observation version
+- **THEN** the app rejects it instead of guessing a compatible mapping
 
-#### Scenario: Observation schema differs
-- **WHEN** a downloaded bundle declares an observation schema hash different from the installed encoder
-- **THEN** loading fails visibly and the documented fallback controls the opponent
+### Requirement: Deterministic synchronous evaluation
+Valid models SHALL evaluate synchronously in Dart at cell decision opportunities, returning finite logits and a deterministic first-maximum action. Outputs SHALL enter the same authoritative interpreter as human commands. All AI decisions at one opportunity SHALL use the pre-command snapshot.
 
-### Requirement: Local execution and readiness
-Browser opponents SHALL execute inference locally without server inference calls. Model loading and warmup SHALL expose readiness and failure state. Once required application and model assets are available locally, inference SHALL require no network access. A documented deterministic fallback SHALL cover unavailable, incompatible, failed, or not-yet-ready inference.
+#### Scenario: Known weight fixture
+- **WHEN** the evaluator runs a committed synthetic weight/input fixture
+- **THEN** FP32 output error is within 1e-6 of its reference and action choice matches
 
-#### Scenario: Network disappears after assets load
-- **WHEN** a match starts with required application and model assets available locally and the network is unavailable
-- **THEN** opponent inference continues without contacting an inference service
+### Requirement: Readiness and fallback
+Loading and evaluation SHALL require no inference server. Missing, invalid or failed model evaluation SHALL use the deterministic baseline and identify the source honestly. Loaded inference SHALL continue without network access; this does not by itself promise offline reload caching.
 
-#### Scenario: Model warmup has not completed
-- **WHEN** an opponent must act before the model becomes ready
-- **THEN** the documented fallback supplies its behavior without blocking the match
+#### Scenario: Asset bundle is absent
+- **WHEN** the expected model asset is unavailable
+- **THEN** the local match starts with an explicitly labeled baseline opponent
 
-### Requirement: Shared weights and isolated agent state
-Opponents SHALL be able to share immutable model weights while preserving independent identity, observations, command state, and any recurrent state. Sharing weights SHALL NOT grant access to another opponent's uncommitted decision or undeclared private observation.
+### Requirement: Runtime measurement
+The development integration SHALL report a bounded sample of synchronous decision costs. A reproducible 60-second three-bot measurement SHALL identify device/browser, policy and frame behavior. The initial investigation budget SHALL be 2 ms for all bot decisions at a boundary; physical-phone qualification SHALL remain unclaimed until measured on a named phone.
 
-#### Scenario: Two opponents use one model bundle
-- **WHEN** both opponents make decisions using shared weights
-- **THEN** each output corresponds to its own observation and state without cross-agent state leakage
-
-### Requirement: Measured runtime selection
-Runtime selection SHALL compare at least a compact Dart evaluator and a WASM inference candidate using equivalent model inputs and weights. Selection SHALL document download size, startup and warmup, memory, sustained inference throughput and latency, frame pacing, and multiple-opponent behavior on declared devices. Numerical budgets SHALL follow measurements rather than assumed latency targets.
-
-#### Scenario: A backend is proposed for adoption
-- **WHEN** a benchmark recommends a runtime backend
-- **THEN** its recorded results include device and browser versions, model identity, workload, correctness tolerance, and the resulting supported operating bounds
-
-### Requirement: Bounded asynchronous integration
-Inference integration SHALL support bounded pending work, deadline-tagged results, and observable completion or failure without blocking authoritative gameplay. Runtime evaluation SHALL distinguish dropping obsolete outputs from actually interrupting computation and include the cost of work that finishes too late.
-
-#### Scenario: A stale computation completes
-- **WHEN** computation finishes after its result has expired
-- **THEN** the result is discarded and its consumed runtime is still included in performance measurements
+#### Scenario: Development measurement
+- **WHEN** enough decisions are collected for a timing sample
+- **THEN** the report identifies policy, sample count and p95 cost without substituting it for a physical-device certification

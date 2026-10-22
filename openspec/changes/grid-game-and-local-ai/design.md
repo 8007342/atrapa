@@ -2,147 +2,66 @@
 
 ## Context
 
-See proposal.md for motivation. The current `lib/game/atrapa_game.dart` is a render-only Flame canvas. `lib/main.dart` mounts it behind a construction screen; tests cover only that screen at two widths. Flutter runners exist for six platforms; Flame is constrained to ^1.38.2. No simulation, AI runtime, or training tools currently exist. This document proposes future implementation; it does not describe deployed functionality.
+This design applies the accepted review in `review-2026-10-21.md` and overriding `plan/rulings-2026-10-21.md`, including the later work split. Those decisions replace the earlier speculative release plan. The baseline repository has a decorative Flame landing screen; this change adds the playable slice. Macuahuitl owns actual training/export. The laptop must not train gameplay weights.
 
 ## Goals / Non-Goals
 
-**Goals:** Define shared timing and command contracts; isolate inference from authoritative match state; compare small local policies with measured browser costs; train reproducible policies offline. Preserve the user's explicit requirement to reuse Flame facilities.
+**Goals:** A playable development browser route using one authoritative Dart rules engine; human controls and 2–4 growing snakes; a strong deterministic baseline; safe loading of compatible local trained policies; repeatable tests and measured evaluation cost.
 
-**Non-Goals:** Final art/storyboard, complete campaign, new vendor API dependency, in-browser training, an Erlang/BEAM port, distributed match servers, and automatic fleet job dispatch. WASM is an inference candidate, not an actor runtime by itself.
+**Non-Goals:** Production launch, final artwork/story, resource boost/braking, helmet/other powerups, cadence difficulty tiers, WASM or worker infrastructure, remote training viewer, fleet orchestration, and certification on untested phones. These are explicitly post-slice per the accepted review.
 
 ## Decisions
 
-### 1. Flame owns the running game's lifecycle
+### One shared pure-Dart transition
 
-Use Flame's `update(dt)`, pause/resume, component lifecycle, resize/camera facilities, input handling, and timer/effect components where their semantics fit. Audit the installed package APIs before adding helpers. No independent periodic game loop, replacement timer library, or wall-clock gameplay scheduler.
+`packages/atrapa_rules` has no Flame/Flutter imports. It owns configuration, heading interpretation, queued turns, substep progression, collision resolution, growth, deterministic tie-breaking, observation encoding and replay state. The app imports it by path; macuahuitl's trainer must use the same package. No second simulator in `lib/` or another language.
 
-A small grid stepper consumes the simulation delta supplied by Flame. It owns cell coordinates, 3–5 substeps per cell, progress, and boundary eligibility: domain logic not supplied by the engine. Headless training calls this same transition logic with explicit deltas and seeds; it does not launch a second clock beside Flame. Timer-driven resource effects must also advance reproducibly in headless execution using the same timer semantics. Wall-clock instrumentation measures inference and frames only; it never spends resources or advances a snake.
+Default development tuning: 16x16 arena, four substeps per cell, eight substeps per simulation second, initial body length three, growth every six cell movements, and 2,400 substep tick limit. Values are tunable profiles, not promises of a final campaign. Profile validation also covers 3 and 5 substeps per cell. At each cell opportunity, collect all AI choices from the same state before queueing them. The latest human perpendicular press replaces the pending turn; one is consumed per boundary. Same/opposite headings are recognized without reversing; Slice A leaves speed constant for everyone.
 
-Alternative: another reactive framework drives physics. Rejected because it duplicates Flame and creates competing time sources.
+All move intents resolve together. Walls and body occupancy, including own body, kill; contested head destinations and head swaps kill both. Non-growing tails vacate on a move; growing tails stay. Dead bodies remain obstacles for the rest of the match. One survivor wins; zero survivors or tick limit is a draw. These documented occupancy details are deterministic defaults exercised by tests and require a schema/golden change if modified.
 
-### 2. Grid movement and temporal semantics
+### Flame owns local time and presentation
 
-Represent logical positions in cell/substep space, independently of screen pixels. Initial profiles configure an integer 3–5 substeps per cell. Substep frequency is a separate, unset tuning parameter, not 3–5 cells/second. A small arena and slow initial rate teach controls; level profiles increase baseline visual movement rate. Resizing changes projection and touch layout, not board topology or speed.
+`ArenaGame.update(dt)` advances shared rules; no independent clock or custom timer framework. A long frame is bounded by pausing the local development game instead of teleporting through unchecked cells. Background lifecycle pauses; resume requires a user action. `GameWidget` and Flame's resize/render lifecycle project grid state. Logical positions never depend on viewport pixels. See `docs/flame-reuse.md` for installed API evidence.
 
-Turns commit at cell boundaries. A single boundary consumes at most one queued turn; no series of late turns is replayed. Speeds and resource drain integrate in simulation time. The user-confirmed effects are forward acceleration to a cap, expensive finite braking above a positive floor, exhaustible acceleration, and temporary powerup extensions. Constants and recovery profiles require playtesting; no numbers are invented here.
+A compact dark grid renderer draws bodies, headings and numeric snake identities. Portrait controls sit below the arena. Solo uses arrows/touch; two-human demo uses WASD for snake1, arrows for snake2. Pause/restart and profile changes reset only the local match. Keyboard repeat cannot queue repeated turns. A single Focus adapter feeds the authoritative interpreter. No UI invents collision or growth rules.
 
-Process crossed substeps/boundaries in order so a large dt cannot skip a wall or occupied segment. Compute simultaneous movement intents from a common pre-transition state before resolving collisions; the policy for contested destinations and head swaps is a gameplay review gate. Flame hitboxes/callbacks can support presentation or continuous contact where appropriate; exact grid occupancy belongs to the authoritative transition because frame overlap alone can tunnel and offline rules must match.
+### Development route boundary
 
-Pause when backgrounded through Flame lifecycle facilities; invalidate outstanding decisions and reset elapsed-time handling on resume. Ordinary frame variation must preserve logical outcomes for equal accepted simulation time. A configured catch-up bound pauses/reports overload rather than skipping collision checks or processing an unbounded burst.
+`ATRAPA_DEV_PLAY` defaults false. Default builds expose construction only; explicitly enabled builds allow `/play` with Flutter's path URL strategy and Wrangler SPA fallback. Route tests exercise enabled and disabled behavior. `npm run build` remains the production-safe build; the development preview build passes the flag. Actual live training viewing remains a separate later change; any local exhibition is labeled as such.
 
-### 3. Shared controls, with explicit semantic review gates
+### Synchronous Dart inference first
 
-Keyboard arrows and the bottom mobile touchpad feed one command interpreter used by bots. Relative coast/left/right/boost/brake are a candidate policy vocabulary, subject to the same input timing and authority as humans. A one-shot turn is different from a held speed modifier; never apply a relative left on every physics tick merely because inference has not returned.
+The runtime consumes the shared `atrapa-grid-v1` observation (252 values) and `coast,left,right` action ordering. The review's proposed 9x9x3 + heading4 + speed1 + rays4 arithmetic is 252, not 256. The core documents absolute axes, blocked/head/free channels, heading order, speed normalization and rays. Rules schema `atrapa-rules-v1` is recorded in every accepted bundle. No screenshot or text encoding is required.
 
-Before implementing the interpreter or generating teacher data, resolve and record: tap versus hold/repeat behavior; whether holding a just-turned direction begins boosting; command replacement at a boundary; release behavior and resource recovery; powerup extension/stacking/expiry behavior. These are explicit dependency tasks, not permissions to invent defaults. Contracts above remain at confirmed behavior until that review. No self-collision, body growth, scoring, victory, or level unlock mechanics are specified. Collision tie policy and any training episode objective must be reviewed before those behaviors or final policy training are implemented. Earlier infrastructure and controlled benchmark fixtures do not require a final campaign.
+The loader checks format, schema versions, dimensions, action ordering, finite parameters and SHA256 of little-endian float32 weights before activation. Output is finite logits with deterministic first-max argmax; these are not calibrated probabilities. Caps bound model file and parameter work. The evaluator owns no game state. Policy failure or absent weights leaves an honestly labeled free-space baseline. Asset manifests and loading paths are documented in `docs/policy-bundle.md` for the compute host.
 
-### 4. Actor-style ownership and bounded delivery
+Forward passes run synchronously at cell boundaries. A bounded sample window records microseconds per decision. Initial investigation threshold is 2 ms all-bot decision work at a boundary; a real phone floor device is still to be nominated. Desktop/emulation measurements cannot qualify a physical device. Only if measured work fails the selected budget should an asynchronous/WASM change be proposed. No worker deadlines, queues or stale-result machinery is needed in this slice.
 
-Use lightweight ownership boundaries, not a mandatory actor framework: authoritative match owner; human input adapter; decision scheduler; inference service; rendering/HUD observers; model-loading supervisor. Start with Dart streams and bounded mailboxes where suitable. Flame remains the only gameplay time source.
+### Offline compute handoff
 
-| Message | Delivery | Backpressure policy |
-|---|---|---|
-| Observation snapshot | Immutable broadcast | One latest snapshot per slow consumer; overwrite pending old snapshots |
-| Inference request | Versioned, bounded work | Initially one batch in flight plus one replaceable pending batch; tune measured batching |
-| Decision result | Match/agent identity, observation tick, heading version, target boundary, expiry | Validate once; drop stale, superseded, dead-agent, reset-match results |
-| Command and resource mutation | Authoritative ordered transition | Bounded per-input state; no arbitrary lossy broadcast |
-| Loss, match end, restart | Reliable ordered event | Retain until consumed/acknowledged or dispose the match explicitly |
+Actual teacher-data generation, learning and retraining run on macuahuitl using the shared rules. Codex provides the rules/schema contract and tests, browser evaluator and bundle parity checks; no laptop training jobs are run. The earlier Rust toy-grid and Dart XOR probes are infrastructure demonstrations, not gameplay models. A host export must match the committed contract and include parity fixtures before it is called compatible. No default trained bundle is fabricated when the host has not supplied one.
 
-A slow observer cannot block match advancement. Reliable event queues also need bounds and consumer lifecycle cleanup; do not trade an inference backlog for an unbounded event backlog. Closing a match invalidates its generation, subscriptions, pending work, and model state. Supervision restarts a failed inference worker with bounded retry/backoff; repeated failure exposes baseline-only mode instead of restarting indefinitely.
-
-Dropping a result does not cancel consumed CPU. Admission control prevents obsolete pending work, deadlines reject old answers, and backend cancellation or worker restart is used only if supported and worth its measured cost. Repeated worker termination can cost more than finishing a tiny forward pass.
-
-### 5. Cadence, level speed, and fairness are separate
-
-Physics, rendering, level speed, and decision cadence are distinct. The internal/display mapping is EASY -> HARD, MEDIUM -> HARDER, HARD -> HARDERER. Schedule eligible decision opportunities targeting upcoming cell boundaries; give higher tiers more opportunities within a measured viable range. Do not mandate one inference per visual substep or assume cadence alone guarantees greater strength.
-
-A request carries match generation, agent ID, state/schema versions, observation tick, intended application opportunity/boundary, and expiry. For agents due together, snapshot everyone before applying any decisions. Application is at the specified simulation opportunity, not whenever a promise completes. Early results wait; late results are discarded. Continuing the accepted heading is the default deadline behavior, with speed-command release/expiry following the reviewed shared input contract. Do not insert a perfect collision-avoidance controller that erases difficulty differences.
-
-Warmup and sustained benchmarks estimate completion margin before boundaries at each level/max boost. Cadence changes stay within tested tier ranges with hysteresis. If load cannot support the selected tier, reduce optional rendering cost/work or report an explicit supported profile/fallback; do not silently relabel weak behavior HARDERER. Inference timing and all-bot p95 cost are recorded separately from player skill. There is no automatic rubber-banding to prevent a human win.
-
-### 6. Policy contract and runtime selection
-
-Use versioned numerical observations, independent of art. Candidates include own speed/heading/reserves/effect timers, obstacle occupancy or rays, nearby opponent position/heading/speed with presence masks, powerups, and decision interval/age. Define visibility explicitly; no human future inputs or hidden opponent intents. A coarse spatial encoder is evaluated if rays cannot represent corridors and traps. Stable normalization, maximum counts, masks, and ordering must be frozen before a particular training run.
-
-Output a bounded action distribution and selected valid command. Probability concentration is not calibrated confidence or collision probability without separate evidence. Share weights across bots; keep per-agent random state and any recurrent memory separate. Prefer a feedforward MLP initially to simplify stale-result handling; larger/recurrent/CNN candidates must earn complexity through evaluation.
-
-An initial experimental weight target is 10K–100K parameters (40–400 KB raw FP32), not a guarantee of quality or a cap on teacher size. Compare identical exported policies in a small Dart evaluator and a browser worker running a WASM inference backend. Keep observations/actions backend-neutral. Choose the smallest complete bundle meeting recorded quality/performance thresholds; count runtime, worker, tokenizer if any, metadata, model and peak memory, not weights alone. WebGPU is an optional measured alternative, never a browser prerequisite. Native adapters can reuse model contracts; each target still requires validation.
-
-Host matching versioned assets locally through existing Wrangler static assets. Validate manifest hashes, schema, tensor shapes, normalization and action vocabulary before activating a bundle. Warm up once; keep a deterministic baseline bot available during loading/failure. Offline operation requires an explicit app/runtime/model cache strategy and tests; static hosting alone does not establish offline support. Any threaded-WASM isolation headers must be justified by measurements and checked with Flutter/assets; single-threaded worker inference does not require multithreaded shared memory.
-
-### 7. Offline training and fleet execution
-
-Reuse the same headless transition and command interpreter. Prefer language-neutral export and a training toolchain that respects forge constraints (no committed Python automation); select a concrete supported trainer through a narrow compatibility experiment. A trainer that cannot invoke the shared rules is not eligible; exporting a second simulator would require a separately reviewed contract change.
-
-Build a transparent teacher and baseline, collect demonstrations, correct learner-visited failures, then evaluate self-play against frozen historical versions and varied opponents. Randomize valid arena configurations, substep rates, decision intervals, resource conditions and measured inference delays. Train evaluation-only fixtures before final gameplay rules are closed; do not advertise a final gameplay policy from provisional objectives.
-
-Large teachers/search, wider experiments and distillation are allowed; deploy the smallest qualified student. The operator reports a 20-core Intel i9, 64 GB RAM, 24 GB RTX A5000 training host. Verify available GPU/driver/memory, access and job budget before scheduling work there. Keep resumable checkpoints, dataset/model hashes, seeds, trainer/environment versions and evaluation results so jobs can move between hosts without silently changing rules. Do not install or launch remote jobs during this planning phase.
-
-### 8. Draft playable UX and shared episode viewer
-
-This is a functional UX draft, not settled art direction. Start with the existing typography/colors and simple vector/grid pieces; avoid new image assets or an extra renderer. Keep the construction landing entry while development navigation offers Play and Watch.
-
-Proposed flow:
-
-`Construction entry -> Development setup -> Play / Watch -> Active surface -> Outcome / Replay or return`
-
-Development setup selects a configured level profile and the visible difficulty label. Play initially has one human and baseline opponents; learned model readiness/fallback is explicit. Watch selects a live sampled episode when available, a recorded replay, or a local exhibition from saved weights. These are different sources with visible labels, not interchangeable claims of live training.
-
-Portrait wireframe (functional arrangement only):
-
-`Mode + level + difficulty + pause/status`
-
-`Square-cell arena with distinguishable snakes and powerups`
-
-`Speed | boost reserve | brake reserve | temporary effect timers`
-
-`PLAY: bottom directional touchpad / WATCH: source identity + viewer controls`
-
-Desktop uses the same board and HUD, placing optional inspection beside the arena when space allows. Cell count does not change with aspect ratio. Respect safe areas; long labels/status text wrap, and HUD/touch targets must be checked at narrow widths before polished art. Show snake identity through more than color. A compact play HUD presents gameplay information; run IDs, inference timing and training metrics belong in optional watch/developer details so they do not clutter the eventual player flow.
-
-Two ways to see matches early:
-
-1. **Local exhibition/replay:** the browser uses the shared transition, accepted commands/seed or selected frozen policy, and the same Flame arena renderer at a visible pace. Flame owns this local clock. Rendering pace does not retune policy cadence or resource accounting. A prerecorded episode is labeled replay. Pausing a local exhibition pauses only that local simulation.
-2. **Sampled training episode:** a headless worker publishes versioned immutable snapshots plus reliable episode outcomes. An observer adapter receives a selected stream through a project-authorized service (transport selected during implementation). The source owns simulation ticks; Flame only renders/interpolates received state. Never apply both local physics and authoritative remote snapshots to the same watched episode. A training worker may run faster than real time; display source speed and lag, or use a dedicated paced evaluation episode. No guarantee that an arbitrary fast episode is watchable one-to-one at human pace.
-
-The viewer does not gate rollout/learner progress. Its latest-state mailbox is separate from the complete ordered transitions used by training and any durable replay. Bounded visual buffering can drop intermediate snapshots, never collision outcomes or learning records. Pause/detach affects only viewing; reconnect loads a full consistent snapshot and outcome/history status. Reject mismatched rules/schema IDs rather than approximating a different simulation. Remote feeds need authenticated project routing; the forge browser currently permits project-local URLs, so do not assume it can directly reach a fleet host. Offline local exhibitions remain usable without a training connection.
-
-Shared opportunities: one arena renderer, resource HUD, identity/status components, schema validation and replay fixtures across play, watch and training. Early roadblocks to test: turn/collision interpolation at dropped snapshots; portrait HUD/touch geometry; input isolation; worker throughput vs rendering pace; model/rules mismatch; protected preview transport; and persistent replay storage. See FORGE_DIAGNOSTICS.md for host mount/training lane needs and observed restrictions.
+Golden replay is checked in the rules package and exercised by the app test environment. A rules/schema change updates its version and golden; macuahuitl then retrains. Integration through `work/<topic>` PRs into `game` keeps both hosts on the same source.
 
 ## Risks / Trade-offs
 
-- Small observations miss board topology -> compare spatial features against scripted trap fixtures and held-out boards.
-- Lower cadence becomes unavoidable failure at higher speed -> establish viable opportunity/deadline ranges at maximum boost before tier tuning.
-- Ignoring late work still wastes compute -> bound admission and profile in-flight cancellation cost.
-- Two simulation implementations drift -> reuse the authoritative transition; a second implementation requires a reviewed contract change.
-- Large runtime defeats tiny weights -> measure the complete download/memory budget and compare Dart/WASM.
-- Survival reward teaches endless circling -> review episode objective and evaluate loops, wins and resource behavior before policy acceptance.
-- Platform-specific timing changes strength -> publish supported performance profiles and verify tier ordering empirically on target phones.
-- Recreating engine infrastructure wastes effort -> document each custom timing/input/collision helper's gap against installed Flame facilities.
+- Model exports may arrive later or with another schema -> keep baseline available; reject mismatches and document the exact handoff.
+- Tiny models may choose immediate death -> authoritative rules still apply; baseline and learned model labels remain distinct, and strength needs a host tournament.
+- Fast-frame catch-up could skip bot opportunities -> use shared before-cell callback inside advancement and test frame partition equivalence.
+- Prototype constant speed omits planned resources -> make that scope clear; defer related powerups and action dimensions together until a versioned rules change.
+- Main and game diverged during parallel work -> merge the cache evidence carefully, preserving both host diagnostics and the operator's no-mount-override correction.
 
 ## Migration Plan
 
-1. Keep the construction entry and its responsive tests. Add a separate development gameplay surface only when implementation is requested.
-2. Land shared simulation and reviewed controls before model training integration; demonstrate keyboard/touch and baseline opponents. Bring up the shared play/watch renderer with local exhibitions early to expose UX/state-contract mismatches.
-3. Add the bounded scheduler and injected-delay tests, then benchmark candidate inference backends with identical weights.
-4. Train/evaluate offline and publish a versioned candidate bundle only after replay and runtime parity pass.
-5. Run phone/browser acceptance tournament; record selected budgets, limitations, and tier profiles before enabling the learned policy outside the development surface.
-6. Roll back by disabling the development/learned-policy surface or selecting the previous compatible bundle/baseline; preserve construction entry and invalidate in-flight generations on restart.
+1. Land rules and replay tests, UI and safe policy runtime together on a work branch.
+2. Verify tests, analysis, strict OpenSpec validation and default/development web builds.
+3. Serve the flagged build through managed Wrangler and inspect portrait, desktop and keyboard play.
+4. Open a PR into `game`, preserving host review/rulings. Merge only after checks and branch policy allow.
+5. When compatible host weights arrive, verify their fixtures and browser behavior; until then report baseline-only readiness.
+6. Roll back by disabling the dev flag or selecting the baseline; public construction remains the default.
 
 ## Open Questions
 
-- Exact initial arena dimensions and substep frequency: tune in the slow first-level prototype.
-- Best student architecture and inference backend: choose from measured complete-bundle and gameplay results.
-- Which physical Android/iOS devices form the supported performance floor: record before accepting numeric budgets.
-- First remote training job size and concurrency: choose after trainer compatibility and available fleet capacity checks.
-
-## Reference material
-
-Implementation must inspect installed Flame APIs; upstream links guide reuse rather than requiring newest APIs:
-
-- Flame lifecycle and pause/resume: https://docs.flame-engine.org/latest/flame/game.html
-- Flame input facilities: https://docs.flame-engine.org/latest/flame/inputs/inputs.html
-- Flame collision limitations (tunneling): https://github.com/flame-engine/flame/blob/main/doc/flame/collision_detection.md
-- ONNX lightweight model/WASM guidance: https://onnxruntime.ai/docs/tutorials/web/ep-webgpu.html
-- Dart WASM-compatible JS interop: https://dart.dev/interop/js-interop/package-web
-- TypeSafe decision interface (inspiration, not a local runtime dependency): https://docs.typesafe.ai/introduction
+- Which physical Android/iOS device should qualify the first mobile performance budget? This does not block emulator-based development and tests.
+- Which host-exported model will be the first default compatible bundle? Actual training remains assigned to macuahuitl.

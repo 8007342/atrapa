@@ -1,19 +1,33 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
+
+import 'play_policy_screen.dart';
 
 import 'game/atrapa_game.dart';
 
-void main() => runApp(const AtrapaApp());
+const devPlayEnabled = bool.fromEnvironment('ATRAPA_DEV_PLAY');
+
+void main() {
+  usePathUrlStrategy();
+  runApp(const AtrapaApp());
+}
 
 class AtrapaApp extends StatelessWidget {
-  const AtrapaApp({super.key});
+  const AtrapaApp({super.key, this.enableDevPlay = devPlayEnabled});
+  final bool enableDevPlay;
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     title: 'Atrapa — Under Construction',
     debugShowCheckedModeBanner: false,
     theme: ThemeData.dark(useMaterial3: true),
-    home: const ConstructionScreen(),
+    routes: {
+      '/': (_) => const ConstructionScreen(),
+      if (enableDevPlay) '/play': (_) => const PolicyPlayScreen(),
+    },
+    onUnknownRoute: (_) =>
+        MaterialPageRoute<void>(builder: (_) => const ConstructionScreen()),
   );
 }
 

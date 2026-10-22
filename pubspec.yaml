@@ -28,6 +28,11 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  atrapa_rules:
+    path: packages/atrapa_rules
+  crypto: ^3.0.0
+  flutter_web_plugins:
+    sdk: flutter
   flutter:
     sdk: flutter
 
@@ -52,6 +57,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/policies/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

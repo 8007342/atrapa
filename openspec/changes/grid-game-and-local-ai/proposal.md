@@ -2,32 +2,29 @@
 
 ## Why
 
-Atrapa currently has a construction screen but no playable simulation or opponent decisions. Establish a grid-based, Flame-driven game foundation and an offline-trained local AI pipeline so movement, resource use, and runtime costs can be tuned before committing to artwork or a complete campaign.
+Build a small playable Atrapa slice before expanding the campaign or inference infrastructure. Use the exact same pure-Dart grid rules in the browser and macuahuitl's trainer so exported opponents play the game they learned.
 
 ## What Changes
 
-- Add square-grid movement with 3–5 discrete substeps per cell, boundary-only turns, keyboard input, and a bottom touchpad in portrait layouts.
-- Add exhaustible acceleration and costly braking, a positive minimum speed, temporary resource powerups, and loss on wall or other-snake contact.
-- Separate level movement-speed progression from AI difficulty; display EASY/MEDIUM/HARD as HARD/HARDER/HARDERER.
-- Schedule local opponent decisions through bounded actor-style messaging with broadcast snapshots and latest-pending replacement; reuse Flame updates and timers.
-- Establish offline simulation, baseline opponents, training, small-model packaging, browser runtime comparisons, and an evaluation tournament. Runtime choice and numeric tuning remain evidence-driven.
-- Draft the playable UX and a shared live-match viewer: watch paced local exhibitions or sampled training episodes using the same arena/HUD, with explicit live/replay identity and bounded observation delivery.
-- Keep the construction landing screen as the public entry while a development gameplay route supports validation; update its existing Flame foundation requirement to allow this extension.
-- Record unresolved gameplay semantics as explicit gates rather than inventing self-collision, growth, scoring, or a level-completion rule.
+- Implement shared square-grid rules, four substeps per cell by default, latest-press boundary turns, growth, self/body/wall collisions, simultaneous head-on losses and tick-limited matches.
+- Add a compile-time-enabled `/play` development surface with one human versus 1–3 AI snakes and a two-human WASD/arrow demo, retaining the construction entry.
+- Use the operator's reachable-free-space heuristic as the baseline/teacher. Run synchronous decisions from a common pre-move snapshot at cell boundaries.
+- Load versioned local dense-policy bundles with a Dart evaluator, explicit baseline fallback and measured forward-pass cost.
+- Keep training and retraining on macuahuitl; the laptop forge tests exported weights without training them.
+- Defer resources, powerups (including helmet), cadence tiers, workers/WASM, training feed/viewer and fleet APIs until after this slice as directed by the accepted review. Preserve those ideas in the roadmap.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `grid-gameplay`: Grid traversal, shared controls, resource effects, collision outcomes, initial progression configuration, and responsive play/watch presentation.
-- `opponent-scheduling`: Fair asynchronous opponent decision opportunities, bounded work, and stale-result rejection within Flame's lifecycle.
-- `local-policy-inference`: Versioned observation/action contracts, local model loading, backend selection, and device measurements.
-- `offline-policy-training`: Reusable headless simulation, demonstrations, self-play, reproducible model bundles, acceptance evaluation, and selected episode viewing.
+- `grid-gameplay`: Shared deterministic grid state, growing snakes, collision outcomes, baseline opponents and local controls.
+- `local-policy-inference`: Numeric policy contract, integrity validation, synchronous Dart evaluation and explicit fallback.
+- `offline-policy-training`: Shared rules import, reproducible exports and training/runtime parity across the compute handoff.
 
 ### Modified Capabilities
 
-- `atrapa`: Extend the Flame foundation from decoration-only to support the proposed development gameplay surface while retaining the construction entry.
+- `atrapa`: Development-only play route and Flame adapter, preserving the public construction screen.
 
 ## Impact
 
-Future implementation touches `lib/game/`, application navigation and controls, tests, and new offline training/benchmark tooling. Browser inference assets may add dependencies and Cloudflare hosting configuration only after a backend is selected; native runners retain their existing platform scope. No vendor inference service, production deployment, art assets, or gameplay code is introduced by this planning change. Offline training may use remote fleet GPUs, including the operator-reported 24 GB RTX A5000 host, after resource and access checks.
+Adds `packages/atrapa_rules` and app play/policy modules, tests and documentation. The app consumes the rules package by path. Training runs from a normal checkout on the operator's macuahuitl workstation; no remote job API is needed for Slice A. Work branches merge through PRs into `game`. Rules/schema evolution belongs to Codex; a version bump plus updated golden replay signals macuahuitl to retrain. No production Cloudflare deployment or native signing is part of this slice.

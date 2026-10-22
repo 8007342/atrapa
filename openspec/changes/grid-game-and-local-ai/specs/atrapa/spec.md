@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Flame foundation
-The app SHALL use Flame for its decorative landing background and for the development gameplay surface described by the grid-gameplay capability, while retaining the construction landing screen as the default entry.
+The app SHALL use Flame for its decorative landing background and for the development gameplay surface described by the grid-gameplay capability, while retaining the construction landing screen as the default entry. The /play development route SHALL require an explicit build flag and SHALL be unavailable in default production builds.
 
 #### Scenario: Opening the first screen
 - **WHEN** the user opens the app
@@ -13,3 +13,7 @@ The app SHALL use Flame for its decorative landing background and for the develo
 #### Scenario: Opening development gameplay
 - **WHEN** a developer enters the gameplay validation surface
 - **THEN** the game runs through Flame's lifecycle with the grid-gameplay behavior
+
+#### Scenario: Default production route isolation
+- **WHEN** a default release build receives a /play navigation
+- **THEN** the construction entry appears without exposing development gameplay
