@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:atrapa_rules/atrapa_rules.dart';
 import 'package:test/test.dart';
 
@@ -15,6 +16,55 @@ RulesMatch fixture(List<SnakeState> snakes,
             substepsPerCell: steps),
         snakes);
 void main() {
+  test('profiles support three, four, five substeps and reject invalid bounds',
+      () {
+    for (final steps in [3, 4, 5]) {
+      final m = RulesMatch(MatchConfig(substepsPerCell: steps));
+      final start = m.snakes.first.head;
+      for (var i = 0; i < steps - 1; i++) {
+        m.stepSubstep();
+      }
+      expect(m.snakes.first.head, start);
+      m.stepSubstep();
+      expect(m.snakes.first.head, start.moved(Heading.right));
+    }
+    expect(() => MatchConfig(substepsPerCell: 0), throwsArgumentError);
+    expect(() => MatchConfig(substepsPerSecond: double.infinity),
+        throwsArgumentError);
+    expect(() => MatchConfig(snakeCount: 5), throwsArgumentError);
+    expect(() => MatchConfig(width: 3), throwsArgumentError);
+  });
+  test('free-space baseline takes only safe perpendicular escape', () {
+    final m = fixture([
+      snake(0, [const GridCell(0, 0)], Heading.left),
+      snake(1, [const GridCell(9, 9)], Heading.left),
+    ]);
+    expect(const FreeSpaceBot().chooseDirection(m, 0), Heading.down);
+  });
+  test('committed golden episode reproduces final bodies and outcomes', () {
+    final json =
+        jsonDecode(File('test/fixtures/golden_episode.json').readAsStringSync())
+            as Map<String, dynamic>;
+    final result = MatchReplay.fromJson(json).run();
+    final actual = {
+      'tick': result.tick,
+      'winnerId': result.winnerId,
+      'endReason': result.endReason,
+      'snakes': [
+        for (final s in result.snakes)
+          {
+            'id': s.id,
+            'heading': s.heading.name,
+            'alive': s.alive,
+            'lossReason': s.lossReason,
+            'body': [
+              for (final c in s.body) [c.x, c.y]
+            ]
+          }
+      ]
+    };
+    expect(actual, json['expected']);
+  });
   test('seed and ordered commands survive JSON replay', () {
     final replay =
         MatchReplay(MatchConfig(seed: 173, snakeCount: 3, tickLimit: 80), [

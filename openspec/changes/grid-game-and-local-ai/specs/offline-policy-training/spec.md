@@ -33,3 +33,14 @@ A host FP32 export SHALL match reference logits within its documented numerical 
 #### Scenario: Provisional infrastructure weights
 - **WHEN** weights were trained on a different toy environment
 - **THEN** their report remains an infrastructure result and the app does not identify them as a compatible Atrapa opponent
+
+### Requirement: Competitive victory objective
+The learned opponent SHALL optimize sole-survivor victory against every other snake independently. Survival duration alone SHALL NOT establish policy strength. Evaluation SHALL report held-out terminal wins, losses and draws by player count and seat, including mutual elimination and timeout rates. The free-space teacher SHALL remain a bootstrap baseline rather than the final objective. Tactical opportunities and representation limitations SHALL follow docs/winning-ai.md.
+
+#### Scenario: Longer survival without more wins
+- **WHEN** a candidate survives longer but does not improve terminal victory outcomes against the baseline
+- **THEN** it is not promoted on survival duration alone
+
+#### Scenario: Multiplayer competition
+- **WHEN** multiple AI snakes compete with a human
+- **THEN** each pursues its own victory against all opponents without hidden cooperation or privileged human targeting

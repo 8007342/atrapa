@@ -1,12 +1,12 @@
 # Forge diagnostics and infrastructure wishlist
 
-Last observed: 2026-10-21 UTC. Project: Atrapa. This is living feedback for Tillandsias forge maintainers and subsequent agent sessions.
+Last observed: 2026-10-22 UTC. Project: Atrapa. This is living feedback for Tillandsias forge maintainers and subsequent agent sessions.
 
 ## Maintenance and evidence rules
 
 Update this file when a session discovers or resolves a forge issue, changes a workaround, verifies accelerator access, or measures training/runtime limits. Preserve resolved incidents and date new evidence. Separate **observed**, **reported**, **proposed**, and **untested** claims. Never record tokens, credential contents, private keys, authenticated URLs, or complete environment dumps. A capability existing on the host is not proof the forge or a sibling toolchain can use it.
 
-Sessions so far drafted UX/training plans, inspected infrastructure, and exercised the existing cache with a synthetic CPU neural-training/checkpoint probe. No new volume was mounted, no gameplay policy was trained, no A5000 host was accessed, and no production deployment occurred. The current running app remains the construction landing page.
+Sessions so far drafted UX/training plans, exercised the cache, and implemented the first playable Flame slice with a shared pure-Dart rules engine. The work-branch development preview exposes /play; default production builds retain construction only. No new volume was mounted, no gameplay policy was trained on the laptop, no A5000 host was accessed from this forge, and no production deployment occurred. Macuahuitl supplied its separate GPU smoke evidence below.
 
 ## Current environment: observed
 
@@ -91,6 +91,24 @@ Wall times are a tiny-model regime with the host land queue possibly active; the
 
 **Still missing:** training on the shared authoritative transition (Dart, after 1.2/1.3 and 2.1); a Dart evaluator parity test against `manifest.json` fixtures (5.3); GPU access from the coding forge itself (this ran on the host); durable/detached jobs, artifact retention and a fleet job API; per-device bit-reproducibility; the CUDA run reuses the host rustup toolchain read-only rather than a toolchain pinned in the image.
 
+### D-007: GitHub PR creation unavailable from this forge — open
+
+Observed 2026-10-22: the connected GitHub get-repository tool succeeded and reported repository access, but create-pull-request returned HTTP403 `Resource not accessible by integration`. Local `gh auth status` reports no authenticated host, consistent with the shipped forge gh cheatsheet: Git credentials live behind the mirror, not in the coding forge. Branch pushes through the mirror succeeded. No secret extraction, token setup, or direct push bypass was attempted.
+
+Impact: source is durably on `work/forge-play`, but the required PR into `game` could not be opened by this lane. Exact PR text and compare link are saved in `plan/forge-play-pr.md`. Maintainer wishlist: a scoped host-owned PR create/read/status API using existing repository authorization without handing tokens to the agent. Verify create/read/merge permissions separately from repository reads and git push. This is an authorization limitation, not an automatic approval-review rejection.
+
+### D-008: Browser window handles can outlive a usable page — recovered
+
+Earlier listed window IDs returned `WINDOW_NOT_RUNNING: the window has no page` during 2026-10-22 verification. Opening fresh visible desktop/portrait windows worked; the operator confirmed seeing snakes playing. Cause (manual close, host lifecycle, or stale listing) was not established. Do not claim a browser crash from this alone. Useful improvement: window listing should expose usable-page/lifecycle state, with guidance on when to reopen.
+
+### D-009: Fleet inbox tool had no lane — open, nonblocking
+
+The fleet inbox read tool returned `refused:msg:no-lane` when inspecting Claude's handoff. Git fetch and committed game-branch rulings/review supplied the handoff instead; no messages were sent. Check consistency of lane attribution between the forge and MCP execution before advertising fleet inbox availability.
+
+### D-010: Branch grammar advice differs from operator workflow — advisory
+
+The mirror accepted `work/forge-play` but warned its branch-creation grammar expected work/order-style refs. The committed operator ruling explicitly uses `work/<topic>` PRs into `game`. No guard was bypassed; the warning was advisory. Align project-declared grammar and mirror advice so accepted collaboration conventions do not produce misleading warnings.
+
 ## Required figuring out
 
 - `flutter` is a host-managed wrapper; filesystem, device, and artifact mounts available to its sibling execution environment may differ from this shell. Confirm access to any new training/artifact mount in every consumer.
@@ -160,9 +178,9 @@ This is **synthetic infrastructure qualification**, not a trained snake policy, 
 
 Immediate usable next steps: implement shared headless transition fixtures, generate bounded seeded episodes into the cache, bring up local baseline exhibitions with the shared renderer, and then qualify the chosen trainer against that exact simulation. Existing input/gameplay review gates still apply to behavior dependent on unconfirmed rules. None of this requires waiting for the A5000 host; its feedback can shape larger jobs and backend selection in parallel.
 
-## Proposed A5000 Tillandsias training lane
+## Optional future A5000 training lane (not needed for Slice A)
 
-The operator reports a 20-core Intel i9, 64 GB RAM, and a 24 GB NVIDIA RTX A5000. Access, actual available capacity, driver/runtime versions and job contention have not been verified. A similar Tillandsias stack could provide the following without enlarging every ordinary coding forge:
+Macuahuitl reported and tested the A5000 lane as recorded in D-006. The later ruling assigns gameplay training/retraining to that host and app/rules evolution to Codex. For Slice A a normal shared-rules checkout and exported assets suffice; the wishlist below is optional future infrastructure, not a prerequisite or request to recreate this forge. The coding forge has not independently accessed the remote host.
 
 - A dedicated opt-in sibling **training lane** rather than requiring CUDA inside the coding container. Let the CPU forge build/edit/test and submit versioned jobs; run gradient updates on the GPU host.
 - Host NVIDIA driver and NVIDIA Container Toolkit/CDI configuration. Select a GPU explicitly, expose it to the trainer container and use a compatible pinned CUDA training image/backend. Do not assume GPU passthrough merely because an Ollama service can infer on that host.
@@ -179,7 +197,7 @@ NVIDIA reference: https://docs.nvidia.com/datacenter/cloud-native/container-tool
 
 ## Live-match UX and headless-training overlap
 
-The planning change `openspec/changes/grid-game-and-local-ai/` now includes a draft live-view contract and UX flow. Implementation is not started.
+The accepted review/operator rulings narrow the active change to a playable development slice. Local play is implemented on work/forge-play with shared renderer/rules, but remote live training viewing is deferred. The table below retains future overlap analysis; it is not a claim that a live feed is implemented.
 
 | Shared facility | Player use | Training viewer use | Roadblock to catch early |
 |---|---|---|---|
@@ -199,3 +217,7 @@ The planning change `openspec/changes/grid-game-and-local-ai/` now includes a dr
 - **2026-10-21 — GPU lane smoke (macuahuitl):** Rust/candle toy-grid MLP trained on CUDA (RTX A5000, pinned image digest) and CPU; flat f32 + manifest export with reference-forward parity. Infrastructure proof only; GPU optional per review. See D-006.
 
 - **2026-10-21 — Cache boundary exercise:** Created an 8.1 MiB cache probe; verified 8 MiB payload across processes; trained/resumed synthetic XOR weights with exact checkpoint parity; host-managed Flutter read/wrote same cache successfully. Added reproducible probes and evidence report. Operator confirmed launcher has no mount override; extra mount is not needed for these experiments. Teardown retention remains to be checked in a later session.
+
+- **2026-10-22 — Playable slice:** Shared pure-Dart rules, growing snakes/collisions/golden replay, free-space baseline, flag-gated /play, keyboard/touch and two-human controls, safe lifecycle pause and defensive local policy evaluation implemented. Default/dev web builds passed; desktop/portrait preview checked and operator saw snakes playing. No laptop training. Synthetic browser 252–64–3 benchmark measured 50us p95 per averaged three-forward-pass batch; see docs/measurements/forge-play.md for limitations. Compatible host weights and physical-phone qualification remain pending. Branch pushed; PR creation denied (D-007).
+
+- 2026-10-22 user feedback: survival-only baseline is insufficient as the final opponent. Designer handoff is recorded in docs/winning-ai.md and the training spec; macuahuitl should optimize competitive wins and report terminal outcomes. No new gameplay training ran in this forge.

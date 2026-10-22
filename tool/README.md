@@ -22,3 +22,7 @@ Times are narrow smoke measurements, not filesystem throughput or RL training es
 The preserved run is `.../probes/session-20261021-a`. To test retention in a later forge session, **read it before overwriting it**, compare hashes with [the evidence report](../plan/experiments/forge-cache-2026-10-21.json), and inspect `flutter-receipt.json`. A surviving process restart proves less than a surviving container recreation. Do not recreate the forge merely to test this while work is active.
 
 Large generated data remains outside Git and `build/web`. Small evidence JSON and probe source are committed. See [FORGE_DIAGNOSTICS.md](../FORGE_DIAGNOSTICS.md) for current limits and observed results.
+
+## Inference-only benchmark
+
+`dart tool/benchmark_rules.dart` evaluates fixed synthetic 252–64–3 parameters and prints aggregated three-bot timing samples. It does not train or supply a gameplay policy. See `docs/measurements/forge-play.md` for browser reproduction and limitations. Actual gameplay training belongs to macuahuitl.

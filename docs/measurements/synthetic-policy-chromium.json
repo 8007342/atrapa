@@ -1,0 +1,21 @@
+{
+  "observedUtc": "2026-10-22T00:06:37Z",
+  "environment": "host-managed headless Chromium, desktop preset, laptop host",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.8078.12 Safari/537.36",
+  "viewport": [1280, 720],
+  "kind": "synthetic synchronous Dart evaluator, not training or gameplay strength",
+  "architecture": "252-64-3",
+  "parameters": 16387,
+  "weightBytes": 65548,
+  "warmupPasses": 30,
+  "measurementWindows": 300,
+  "batchesPerWindow": 10,
+  "botsPerBatch": 3,
+  "p50BatchMicros": 40,
+  "p95BatchMicros": 50,
+  "maxBatchMicros": 100,
+  "actionSample": ["right", "left", "left"],
+  "rulesSchema": "atrapa-rules-v1",
+  "observationSchema": "atrapa-grid-v1",
+  "limitations": "Finite browser timer granularity; window-averaged batches. Not a real-phone, frame-pacing, trained-policy, or 60-second gameplay qualification. User agent is an emulation preset, not host OS evidence."
+}

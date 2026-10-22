@@ -36,6 +36,9 @@ class _PolicyPlayScreenState extends State<PolicyPlayScreen> {
       expectedRulesSchemaVersion: rulesSchemaVersion,
       expectedInputSize: observationSize,
     );
+    if (!result.isReady) {
+      debugPrint(result.error);
+    }
     if (mounted) setState(() => _result = result);
   }
 
