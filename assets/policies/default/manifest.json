@@ -1,0 +1,130 @@
+{
+ "format": "atrapa-dense-v1",
+ "modelId": "freespace-v1-2026-10-22-it2575",
+ "numericFormat": "float32-le",
+ "normalization": "encoder-owned",
+ "output": "logits-argmax-first",
+ "rulesSchemaVersion": "atrapa-rules-v1",
+ "observationSchema": "atrapa-grid-v1",
+ "actions": [
+  "coast",
+  "left",
+  "right"
+ ],
+ "weightsSha256": "dc4fe9a1f09bd1721ff234d26039b85e61e1087bd4aa0d08ca79330b645f2678",
+ "layers": [
+  {
+   "inputs": 252,
+   "outputs": 64,
+   "activation": "relu"
+  },
+  {
+   "inputs": 64,
+   "outputs": 32,
+   "activation": "relu"
+  },
+  {
+   "inputs": 32,
+   "outputs": 3,
+   "activation": "linear"
+  }
+ ],
+ "parameterCount": 18371,
+ "parity": {
+  "file": "parity.json",
+  "absoluteTolerance": 0.00001
+ },
+ "provenance": {
+  "trainer": "packages/atrapa_train (pure Dart, CPU)",
+  "host": "2e508b934a98",
+  "device": "cpu, 16 isolates",
+  "dart": "3.9.4",
+  "teacher": "atrapa_rules FreeSpaceBot()",
+  "imitation": {
+   "episodes": 6000,
+   "teacherEpsilon": 0.1,
+   "samples": 702025,
+   "epochs": 8,
+   "heldoutAccuracy": 0.8112304492749495,
+   "wallSeconds": 70.166,
+   "initSeed": 7
+  },
+  "selfplay": {
+   "iterations": 2861,
+   "adoptedIteration": 2575,
+   "wallSeconds": 2400.534,
+   "selectionScoreImitation": -0.3583333333333334,
+   "selectionScoreAdopted": 0.9333333333333333,
+   "selectionSeeds": "500000+"
+  },
+  "trainingWallSeconds": 2474.995,
+  "evaluation": {
+   "seeds": "1000000 + game, policy seat = game % snakes, games=400 per cell",
+   "results": {
+    "1v1-teacher": {
+     "win": 318,
+     "draw": 5,
+     "loss": 77,
+     "games": 400,
+     "win_rate": 0.795
+    },
+    "1v2-teacher": {
+     "win": 200,
+     "draw": 3,
+     "loss": 197,
+     "games": 400,
+     "win_rate": 0.5
+    },
+    "1v3-teacher": {
+     "win": 255,
+     "draw": 32,
+     "loss": 113,
+     "games": 400,
+     "win_rate": 0.6375
+    },
+    "1v1-random": {
+     "win": 400,
+     "draw": 0,
+     "loss": 0,
+     "games": 400,
+     "win_rate": 1.0
+    },
+    "1v2-random": {
+     "win": 400,
+     "draw": 0,
+     "loss": 0,
+     "games": 400,
+     "win_rate": 1.0
+    },
+    "1v3-random": {
+     "win": 400,
+     "draw": 0,
+     "loss": 0,
+     "games": 400,
+     "win_rate": 1.0
+    },
+    "baseline-teacher-1v1-teacher": {
+     "win": 10,
+     "draw": 375,
+     "loss": 15,
+     "games": 400,
+     "win_rate": 0.025
+    },
+    "baseline-teacher-1v2-teacher": {
+     "win": 86,
+     "draw": 71,
+     "loss": 243,
+     "games": 400,
+     "win_rate": 0.215
+    },
+    "baseline-teacher-1v3-teacher": {
+     "win": 26,
+     "draw": 176,
+     "loss": 198,
+     "games": 400,
+     "win_rate": 0.065
+    }
+   }
+  }
+ }
+}
