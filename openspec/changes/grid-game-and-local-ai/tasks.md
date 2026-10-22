@@ -32,7 +32,7 @@ The accepted review and operator rulings replace the earlier 46-task release pla
 ## 5. Integration — Codex
 
 - [x] 5.1 Run rules tests, app tests/analysis, default/dev web builds, strict OpenSpec validation and managed Wrangler smoke; inspect visible portrait/desktop gameplay and update diagnostics. Proof: docs/measurements/forge-play.md and FORGE_DIAGNOSTICS.md.
-- [ ] 5.2 Push the verified work branch and integrate into game, reconciling concurrent host changes. Proof: remote work/game refs and passing local checks. Direct integration authorized by the user on 2026-10-22; PR creation remains unavailable.
+- [x] 5.2 Push the verified work branch and integrate into game, reconciling concurrent host changes. Proof: remote work/game refs and passing local checks. Direct integration authorized by the user on 2026-10-22; PR creation remains unavailable.
 
 ## Workflow follow-up
 
