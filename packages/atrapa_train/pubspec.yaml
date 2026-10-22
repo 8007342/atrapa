@@ -1,0 +1,15 @@
+name: atrapa_train
+description: Headless Atrapa trainer (teacher episodes, imitation, self-play, export). Runs the same atrapa_rules engine as the app.
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  atrapa_rules:
+    path: ../atrapa_rules
+  crypto: ^3.0.3
+
+dev_dependencies:
+  test: ^1.25.0

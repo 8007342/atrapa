@@ -1,6 +1,9 @@
 # Local policy assets
 
-No trained weights are committed yet. Missing `default/manifest.json` is an
-expected baseline readiness state, not a substitute toy model. Macuahuitl supplies
-real game-policy bundles; see [the delivery contract](../../docs/policy-bundle.md).
-Do not place training checkpoints or toy smoke models in runtime assets.
+`default/` is the first trained game policy (`freespace-v1`), delivered by
+macuahuitl with `packages/atrapa_train` against `atrapa-rules-v1` /
+`atrapa-grid-v1`. It has `manifest.json` and `weights.bin` per
+[the delivery contract](../../docs/policy-bundle.md), and `parity.json`
+(observations, logits and actions; tolerance 1e-5), which
+`packages/atrapa_train` tests run through the app's `LocalPolicy`.
+Retrain whenever the rules or observation schema version changes.
