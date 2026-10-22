@@ -2,7 +2,7 @@
   "name": "atrapa-web",
   "private": true,
   "scripts": {
-    "build": "flutter build web --release --no-web-resources-cdn",
+    "build": "sh scripts/web-build.sh",
     "dev": "npm run build && wrangler dev --ip 0.0.0.0",
     "preview": "wrangler dev --ip 0.0.0.0",
     "deploy": "npm run build && wrangler deploy"
